@@ -22,7 +22,6 @@ setuptools.setup(
     install_requires=[
         'numpy',
         'astropy',
-        'sigfig',
-        'warnings'
+        'sigfig'
     ],
 )
