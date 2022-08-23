@@ -17,8 +17,7 @@ setuptools.setup(
     },
     license='GNU GPLv3',
     packages=[
-        'profiles',
-        'fit'
+        'dmprofiles'
     ],
     install_requires=[
         'numpy',
