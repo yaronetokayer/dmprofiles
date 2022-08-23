@@ -11,10 +11,10 @@ setuptools.setup(
     description='A collection of functions for generating and fitting dark matter halo profiles',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    # url='https://github.com/mike-huls/toolbox',
-    # project_urls = {
-    #     "Bug Tracker": "https://github.com/mike-huls/toolbox/issues"
-    # },
+    url='https://github.com/yaronetokayer/dmprofiles',
+    project_urls = {
+        "Bug Tracker": "https://github.com/yaronetokayer/dmprofiles/issues"
+    },
     license='GNU GPLv3',
     packages=[
         'profiles',
