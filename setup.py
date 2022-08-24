@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name='dmprofiles',
-    version='0.0.1',
+    version='0.0.2',
     author='Yarone Tokayer',
     author_email='yarone.tokayer@yale.edu',
     description='A collection of functions for generating and fitting dark matter halo profiles',
