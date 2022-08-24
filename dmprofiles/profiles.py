@@ -13,7 +13,7 @@ cosmo = FlatLambdaCDM(H0=69, Om0=0.3)
 #### NFW Profiles ####
 ######################
 
-def rho_nfw(r, c, r_200, z=0):
+def rho_nfw(r, c, r_200, z=0, cosmo=cosmo):
     """
     NFW 3D density at r, given the concetration parameter and the scale radius
     cgs units
@@ -23,6 +23,8 @@ def rho_nfw(r, c, r_200, z=0):
     c - concentration parameter
     r_200 - the virial radius (unit consistent with r)
     z - redshift of the halo (default is 0)
+    cosmo - astropy cosmology class instantiation.
+            Default is FlatLambdaCDM(H0=69, Om0=0.3)
     
     Returns:
     rho_nfw - 3D density at r (g / cm**3)
@@ -38,7 +40,7 @@ def rho_nfw(r, c, r_200, z=0):
     
     return ( ( d_c * rho_c ) / ( (r / r_s) * ( 1 + ( r / r_s ) )**2 ) ).to(u.g / u.cm**3)
 
-def m_nfw_3d(r, c, r_200, z=0):
+def m_nfw_3d(r, c, r_200, z=0, cosmo=cosmo):
     """
     NFW 3D spherical mass enclosed at r, given the concetration parameter and the scale radius
     cgs units
@@ -48,6 +50,8 @@ def m_nfw_3d(r, c, r_200, z=0):
     c - concentration parameter
     r_200 - the virial radius (kpc)
     z - redshift of the halo (default is 0)
+    cosmo - astropy cosmology class instantiation.
+            Default is FlatLambdaCDM(H0=69, Om0=0.3)
     
     Returns:
     m_nfw_3d - 3D spherical integrated mass at r (Msun)
@@ -67,7 +71,7 @@ def m_nfw_3d(r, c, r_200, z=0):
     
     return m_nfw_3d.to(u.Msun)
 
-def m_nfw_2d(r, c, r_200, z=0):
+def m_nfw_2d(r, c, r_200, z=0, cosmo=cosmo):
     """
     NFW 2D cylindrical mass enclosed at r, given the concetration parameter and the scale radius
     cgs units
@@ -77,6 +81,8 @@ def m_nfw_2d(r, c, r_200, z=0):
     c - concentration parameter
     r_200 - the virial radius (kpc)
     z - redshift of the halo (default is 0)
+    cosmo - astropy cosmology class instantiation.
+            Default is FlatLambdaCDM(H0=69, Om0=0.3)
     
     Returns:
     m_nfw_2d - 2D cylindrical integrated mass at r (Msun)
@@ -122,7 +128,7 @@ def m_nfw_2d(r, c, r_200, z=0):
     
     return m_nfw_2d.to(u.Msun)
 
-def m200_nfw(r_200, z=0):
+def m200_nfw(r_200, z=0, cosmo=cosmo):
     """
     3D mass of an NFW halo contained within a radius of r200.
     This is equivalent to passing r200 to m_nfw_3d, but the equation simplifies at r200.
@@ -132,6 +138,8 @@ def m200_nfw(r_200, z=0):
     r200 - array-like, radius of the halo inside which the mass density is 200*rho_c
            astropy units expected
     z - redshift of the halo (default is 0)
+    cosmo - astropy cosmology class instantiation.
+            Default is FlatLambdaCDM(H0=69, Om0=0.3)
     
     Returns:
     m200 - mass enclosed within r200 (Msol)
