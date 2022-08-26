@@ -15,11 +15,11 @@ cosmo = FlatLambdaCDM(H0=69, Om0=0.3)
 
 def rho_nfw(r, c, r_200, z=0, cosmo=cosmo):
     """
-    NFW 3D density at r, given the concetration parameter and the scale radius
+    NFW 3D density at r, given the concentration parameter and the scale radius
     cgs units
     
     Inputs:
-    r - radius at which to compute the mass density
+    r - array-like, radius at which to compute the mass density
     c - concentration parameter
     r_200 - the virial radius (unit consistent with r)
     z - redshift of the halo (default is 0)
