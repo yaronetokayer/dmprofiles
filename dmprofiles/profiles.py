@@ -46,9 +46,10 @@ def m_nfw_3d(r, c, r_200, z=0, cosmo=cosmo):
     cgs units
     
     Inputs:
-    r - radius at which to compute the enclosed mass (kpc)
+    r - radius at which to compute the enclosed mass (astropy units expected)
     c - concentration parameter
-    r_200 - the virial radius (kpc)
+    r_200 - array-like, radius of the halo inside which the mass density is 200*rho_c
+           astropy units expected
     z - redshift of the halo (default is 0)
     cosmo - astropy cosmology class instantiation.
             Default is FlatLambdaCDM(H0=69, Om0=0.3)
@@ -73,13 +74,13 @@ def m_nfw_3d(r, c, r_200, z=0, cosmo=cosmo):
 
 def m_nfw_2d(r, c, r_200, z=0, cosmo=cosmo):
     """
-    NFW 2D cylindrical mass enclosed at r, given the concetration parameter and the scale radius
-    cgs units
+    NFW 2D cylindrical mass enclosed at r, given the concentration parameter and r_200
     
     Inputs:
-    r - radius at which to compute the enclosed mass (kpc)
+    r - radius at which to compute the enclosed mass (astropy units expected)
     c - concentration parameter
-    r_200 - the virial radius (kpc)
+    r_200 - array-like, radius of the halo inside which the mass density is 200*rho_c
+           astropy units expected
     z - redshift of the halo (default is 0)
     cosmo - astropy cosmology class instantiation.
             Default is FlatLambdaCDM(H0=69, Om0=0.3)
@@ -167,12 +168,14 @@ The truncated NFW profile, as presented in in Baltz, Marshall, Oguri (2009)
 def rho_tnfw(r, c, r_200, tau, z=0, cosmo=cosmo):
     """
     tNFW 3D density at r, with the concentration parameter, scale radius, and tau=r_t/r_s
-    as free parameters, returns in cgs units
+    as free parameters.
+    Returns in cgs units
     
     Inputs:
-    r - array-like, radius at which to compute the mass density
+    r - array-like, radius at which to compute the mass density (must include astropy units)
     c - concentration parameter
-    r_200 - the virial radius (unit consistent with r)
+    r_200 - array-like, radius of the halo inside which the mass density is 200*rho_c
+            astropy units expected
     tau - ratio of truncation radius to scale radius
     z - redshift of the halo (default is 0)
     cosmo - astropy cosmology class instantiation.
@@ -187,6 +190,85 @@ def rho_tnfw(r, c, r_200, tau, z=0, cosmo=cosmo):
     return ( 
         rho_nfw(r, c, r_200, z=z, cosmo=cosmo) * ( tau**2 / ( tau**2 + ( r / r_s )**2 ) ) 
         ).to(u.g / u.cm**3)
+
+def m_tnfw_2d(r, c, r_200, tau, z=0, cosmo=cosmo):
+    """
+    Truncated NFW 2D cylindrical mass enclosed at r, given the concentration parameter, 
+    the r_200, and tau = r_t/r_s.
+    
+    Inputs:
+    r - radius at which to compute the enclosed mass (must include astropy units)
+    c - concentration parameter
+    r_200 - array-like, radius of the halo inside which the mass density is 200*rho_c
+            astropy units expected
+    tau - ratio of truncation radius to scale radius
+    z - redshift of the halo (default is 0)
+    cosmo - astropy cosmology class instantiation.
+            Default is FlatLambdaCDM(H0=69, Om0=0.3)
+    
+    Returns:
+    m_tnfw_2d - 2D cylindrical integrated mass at r (Msun)
+    """
+    
+    r_s = r_200 / c
+    
+    x = ( r / r_s ).value
+    
+    m0 = _m0(c, r_s, z=z, cosmo=cosmo)
+    
+    m_tnfw_2d = ( m0 * ( tau**2 / ( tau**2 + 1 )**2 ) * 
+                 ( ( tau**2 + 1 + 2 * ( x**2 - 1 ) ) * _f(x) + tau * np.pi + 
+                 ( tau**2 - 1 ) * np.log(tau) + 
+                  np.sqrt( tau**2 + x**2 ) * ( -np.pi + ( ( tau**2 - 1 ) / tau ) * _l(x, tau) ) )
+                )
+    
+    return m_tnfw_2d.to(u.Msun)
+
+def m_tot_tnfw(c, r_200, tau, z=0, cosmo=cosmo):
+    """
+    Total mass in truncated NFW halo
+    
+    Inputs:
+    c - concentration parameter
+    r_200 - array-like, radius of the halo inside which the mass density is 200*rho_c
+            astropy units expected
+    tau - ratio of truncation radius to scale radius
+    z - redshift of the halo (default is 0)
+    cosmo - astropy cosmology class instantiation.
+            Default is FlatLambdaCDM(H0=69, Om0=0.3)
+    
+    Returns:
+    m_tot_tnfw - in units of Msun
+    """
+    
+    m0 = _m0(c, r_200 / c, z=z, cosmo=cosmo)
+
+    return ( m0 * ( tau**2 / ( tau**2 + 1 )**2 ) * 
+            ( ( tau**2 - 1 ) * np.log( tau ) + tau * np.pi - (tau**2 + 1 ) ) ).to(u.Msun)
+
+def _m0(c, r_s, z=0, cosmo=cosmo):
+    """
+    M_0 as defined in Baltz, Marshall, Oguri (2009)
+    Mass normalization in NFW profiles
+    
+    Inputs:
+    c - concentration parameter
+    r_s - r_200 / c, the scale radius (unit consistent with r)
+    z - redshift of the halo (default is 0)
+    cosmo - astropy cosmology class instantiation.
+            Default is FlatLambdaCDM(H0=69, Om0=0.3)
+    
+    Returns:
+    M_0(x) - Mass normalization
+    """
+    
+    d_c = delta_c(c)
+    
+    h = cosmo.H(z) # Hubble parameter
+    
+    rho_c = ( 3 * h**2 ) / ( 8 * np.pi * G )
+    
+    return 4 * np.pi * r_s**3 * d_c * rho_c
 
 def _f(x):
     """
@@ -220,6 +302,20 @@ def _f(x):
            np.sqrt( x**2 - 1, out=np.ones(x.shape, dtype='complex'), where=x.real > 1 ) ).real
     
     return f_l + f_1 + f_g
+
+def _l(x, tau):
+    """
+    L(x) as defined in Baltz, Marshall, Oguri (2009)
+    
+    Inputs:
+    x - array-like, must be greater than 0
+    tau - scalar
+    
+    Returns:
+    L(x)
+    """
+    
+    return np.log( x / ( np.sqrt( tau**2 + x**2 ) + tau ) )
 
 ########################
 #### PIEMD Profiles ####
