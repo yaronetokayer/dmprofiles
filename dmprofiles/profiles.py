@@ -94,37 +94,30 @@ def m_nfw_2d(r, c, r_200, z=0, cosmo=cosmo):
     
     rho_c = ( 3 * h**2 ) / ( 8 * np.pi * G )
     
-    r_s = r_200 / c  
-
-    # x < 1
-    x_l = r / r_s
+    r_s = r_200 / c
     
-    x_l[x_l >= 1] = np.nan
-    
-    sigma_l = ( (4 / x_l**2) * r_s * d_c * rho_c * 
-                ( ( 2 / np.sqrt(1 - x_l**2) ) 
-                 * np.arctanh( np.sqrt( (1 - x_l) / (1 + x_l) ) ).value # Convert from radians
-                 + np.log(x_l / 2) ) )
+    x = ( r / r_s ).value # x is dimensionless
     
     # x = 1
-    x_1 = r / r_s
+    # returns zero for all other values
+    sigma_1 = np.where(x == 1, x, np.zeros(x.shape)) * 4 * r_s * d_c * rho_c * ( 1 + np.log(1 / 2) )    
     
-    x_1[x_1 != 1] = np.nan
-    
-    sigma_1 = x_1 * 4 * r_s * d_c * rho_c * ( 1 + np.log(1 / 2) )
+    # x < 1
+    # returns zero for all other values
+    sigma_l = ( (4 / x**2) * r_s * d_c * rho_c * 
+                ( ( 2 / np.sqrt(1 - x**2, out=np.ones(x.shape), where=x < 1) ) 
+                 * np.arctanh( np.sqrt( (1 - x) / (1 + x), out=np.zeros(x.shape),where=x<1) )
+                 + np.log(x / 2, out=np.zeros(x.shape), where=x < 1) ) ) 
     
     # x > 1
-    x_g = r / r_s
-    
-    x_g[x_g <= 1] = np.nan
-    
-    sigma_g = ( (4 / x_g**2) * r_s * d_c * rho_c 
-               * ( ( 2 / np.sqrt(x_g**2 - 1) ) 
-                  * np.arctan( np.sqrt( (x_g - 1) / (1 + x_g) ) ).value # Convert from radians
-                  + np.log(x_g / 2) ) )
+    # returns zero for all other values
+    sigma_g = ( (4 / x**2) * r_s * d_c * rho_c 
+               * ( ( 2 / np.sqrt(x**2 - 1, out=np.ones(x.shape), where=x > 1) ) 
+                  * np.arctan( np.sqrt( (x - 1) / (1 + x), out=np.zeros(x.shape), where=x > 1) )
+                  + np.log(x / 2, out=np.zeros(x.shape), where=x > 1) ) )
     
     # Convert from avg surface density to total enclosed mass
-    m_nfw_2d = np.pi * r**2 * ( np.nan_to_num(sigma_l) + np.nan_to_num(sigma_1) + np.nan_to_num(sigma_g) )
+    m_nfw_2d = np.pi * r**2 * ( sigma_l + sigma_1 + sigma_g )
     
     return m_nfw_2d.to(u.Msun)
 
@@ -163,6 +156,70 @@ def delta_c(c):
     """
         
     return ( 200 / 3 ) * ( c**3 / ( np.log(1 + c) - ( c / (1 + c) ) ) )
+
+#######################
+#### tNFW Profiles ####
+#######################
+'''
+The truncated NFW profile, as presented in in Baltz, Marshall, Oguri (2009)
+'''
+
+def rho_tnfw(r, c, r_200, tau, z=0, cosmo=cosmo):
+    """
+    tNFW 3D density at r, with the concentration parameter, scale radius, and tau=r_t/r_s
+    as free parameters, returns in cgs units
+    
+    Inputs:
+    r - array-like, radius at which to compute the mass density
+    c - concentration parameter
+    r_200 - the virial radius (unit consistent with r)
+    tau - ratio of truncation radius to scale radius
+    z - redshift of the halo (default is 0)
+    cosmo - astropy cosmology class instantiation.
+            Default is FlatLambdaCDM(H0=69, Om0=0.3)
+    
+    Returns:
+    rho_nfw - 3D density at r (g / cm**3)
+    """
+    
+    r_s = r_200 / c
+    
+    return ( 
+        rho_nfw(r, c, r_200, z=z, cosmo=cosmo) * ( tau**2 / ( tau**2 + ( r / r_s )**2 ) ) 
+        ).to(u.g / u.cm**3)
+
+def _f(x):
+    """
+    F(x) as defined in Baltz, Marshall, Oguri (2009)
+    For purely imaginary numerator and denominator, branches are chosen such that F(x) remains > 0
+    
+    Inputs:
+    x - array-like, must be greater than 0
+    
+    Returns:
+    F(x)
+    """
+    
+    if not isinstance(x, np.ndarray):
+        x = np.array([x])
+    
+    # x = 1
+    # returns zero for all other values
+    f_1 = np.where(x == 1, x, np.zeros(x.shape))  
+    
+    x = x.astype('complex')
+    
+    # x < 1
+    # returns zero for all other values
+    f_l = ( -np.arccos( 1 / x, out=np.zeros(x.shape, dtype='complex'), where=x.real < 1 ) / 
+           np.sqrt( x**2 - 1, out=np.ones(x.shape, dtype='complex'), where=x.real < 1 ) ).real
+    
+    # x > 1
+    # returns zero for all other values
+    f_g = ( np.arccos( 1 / x, out=np.zeros(x.shape, dtype='complex'), where=x.real > 1 ) / 
+           np.sqrt( x**2 - 1, out=np.ones(x.shape, dtype='complex'), where=x.real > 1 ) ).real
+    
+    return f_l + f_1 + f_g
 
 ########################
 #### PIEMD Profiles ####
