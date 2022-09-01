@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: dmprofiles
+Version: 0.0.2
+Summary: A collection of functions for generating and fitting dark matter halo profiles
+Home-page: https://github.com/yaronetokayer/dmprofiles
+Author: Yarone Tokayer
+Author-email: yarone.tokayer@yale.edu
+License: GNU GPLv3
+Project-URL: Bug Tracker, https://github.com/yaronetokayer/dmprofiles/issues
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# DMProfiles
+
+This is example text.
+[Kneib & Natarajan (2011)](https://link.springer.com/article/10.1007/s00159-011-0047-3)

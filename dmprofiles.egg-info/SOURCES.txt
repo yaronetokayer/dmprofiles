@@ -1,0 +1,12 @@
+LICENSE
+README.md
+setup.py
+dmprofiles/__init__.py
+dmprofiles/fit.py
+dmprofiles/functionalforms.py
+dmprofiles/profiles.py
+dmprofiles.egg-info/PKG-INFO
+dmprofiles.egg-info/SOURCES.txt
+dmprofiles.egg-info/dependency_links.txt
+dmprofiles.egg-info/requires.txt
+dmprofiles.egg-info/top_level.txt
