@@ -278,7 +278,7 @@ def fit_m_tnfw2d(r, m, c_prec=4, r_200_prec=4, tau_prec=4, c_start=10, r_200_sta
         # Calculate squared error
         error = np.zeros((c_res, r_200_res, tau_res))
         for ind, val in enumerate(r):
-            error += (np.log10(dmp.m_tnfw_2d(val, cc, r2r2, tt, z).value) - np.log10(m[ind].value))**2
+            error += (np.log10(m_tnfw_2d(val, cc, r2r2, tt, z).value) - np.log10(m[ind].value))**2
 
         # Find best fit values
         min_ind = np.unravel_index(np.argmin(error, axis=None),error.shape)
