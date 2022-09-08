@@ -19,9 +19,9 @@ def rho_nfw(r, c, r_200, z=0, cosmo=cosmo):
     cgs units
     
     Inputs:
-    r - array-like, radius at which to compute the mass density
+    r - array-like, radius at which to compute the mass density (astropy units expected)
     c - concentration parameter
-    r_200 - the virial radius (unit consistent with r)
+    r_200 - the virial radius (astropy units expected)
     z - redshift of the halo (default is 0)
     cosmo - astropy cosmology class instantiation.
             Default is FlatLambdaCDM(H0=69, Om0=0.3)

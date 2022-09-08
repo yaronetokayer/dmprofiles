@@ -3,6 +3,7 @@ Fitting routines for profiles and functional forms
 '''
 from .profiles import *
 from .functionalforms import *
+import warnings
 
 #######################################
 #### NFW Fitting Functions ############
@@ -15,12 +16,12 @@ def fit_m_nfw3d(r, m, c_prec=4, r_200_prec=4, c_lims=(1, 101), r_200_lims=(1, 10
     find c and r_200 to fit NFW profile
     
     Inputs:
-    r - array of length 2, radius values (kpc)
-    m - array of length 2, enclosed mass values (Msun)
+    r - array of length 2, radius values (astropy units expected)
+    m - array of length 2, enclosed mass values (astropy units expected)
     c_prec - desired precision of c (sigfigs)
     r_200_prec - desired precision of r_200 (sigfigs)
     c_lims - limits of c search
-    r_200_lims - limits of r_200 search (kpc)
+    r_200_lims - limits of r_200 search (astropy units expected)
     z - redshift of the halo
     chatter - option to see fitting progress
     
@@ -123,12 +124,12 @@ def fit_m_nfw2d(r, m, c_prec=4, r_200_prec=4, c_lims=(1, 1001), r_200_lims=(1, 1
     find c and r_200 to fit NFW profile
     
     Inputs:
-    r - array of min length 2, radius values (kpc)
-    m - array of min length 2, enclosed mass values (Msun)
+    r - array of min length 2, radius values (astropy units expected)
+    m - array of min length 2, enclosed mass values (astropy units expected)
     c_prec - desired precision of c (sigfigs)
-    r_200_prec - desires precision of r_200 (sigfigs)
+    r_200_prec - desired precision of r_200 (sigfigs)
     c_lims - limits of c search
-    r_200_lims - limits of r_200 search (kpc)
+    r_200_lims - limits of r_200 search (astropy units expected)
     z - redshift of the halo
     chatter - option to see fittings progress
     
@@ -167,32 +168,20 @@ def fit_m_nfw2d(r, m, c_prec=4, r_200_prec=4, c_lims=(1, 1001), r_200_lims=(1, 1
         r_200_min = r_200_axis[min_ind[0]]
         err_score = 100 * 100**( -1 * error[min_ind[0]][min_ind[1]] )
 
-        # If best fit is unphysical, reject fit
-        if c_min < 1:
-            flag = True
-            warnings.warn('parameter c_min is < 1.  This is unphysical.  Returning to last physical value.')
-            c_min = c_min0 # Set to last kosher value; fitting_c will become false
-            if i == 2:
-                c_lims = ( 1, 1.1 * c_min0  )
-            else:
-                c_lims = ( 1, c_min0 + 2 * diff_c ) # Same parameter space as before, but cut off at 1
-        if r_200_min < 0:
-            flag = True
-            warnings.warn('parameter r_200_min is < 0.  This is unphysical.  Returning to last physical value.')
-            r_200_min = r_200_min0 # Set to last kosher value; fitting_r_200 will become false
-            if i == 2:
-                r_200_lims = ( 0, 1.1 * r_200_min0 )
-            else:
-                r_200_lims = ( 0, r_200_min0 + 2 * diff_r_200 ) # Same parameter space as before, but cut off at 0
-
         # Set new parameter space limits
         if i == 1: # Flags will always be true in first iteration
             c_min0 = c_min
             r_200_min0 = r_200_min
             
             # Best value +/- 10%
-            c_lims = ( 0.9 * c_min0, 1.1 * c_min0 )
-            r_200_lims = ( 0.9 * r_200_min0, 1.1 * r_200_min0 )
+            if 0.9 * c_min0 < 1:
+                c_lims = ( 1.000, 1.1 * c_min0 )
+            else:
+                c_lims = ( 0.9 * c_min0, 1.1 * c_min0 )
+            if 0.9 * r_200_min0 < 0:
+                r_200_lims = ( 0.0000, 1.1 * r_200_min0 )
+            else:
+                r_200_lims = ( 0.9 * r_200_min0, 1.1 * r_200_min0 )
             
         else:
             # Compare with last guess
@@ -206,22 +195,174 @@ def fit_m_nfw2d(r, m, c_prec=4, r_200_prec=4, c_lims=(1, 1001), r_200_lims=(1, 1
             
             c_min0 = c_min
             r_200_min0 = r_200_min
-            err_score0 = err_score
 
             if fitting_c:
-                c_lims = ( c_min0 - 2 * diff_c, c_min0 + 2 * diff_c )
+                if c_min0 - 2 * diff_c < 1:
+                    c_lims = ( 1.000, c_min0 + 2 * diff_c )
+                else:
+                    c_lims = ( c_min0 - 2 * diff_c, c_min0 + 2 * diff_c )
             if fitting_r_200:
-                r_200_lims = ( r_200_min0 - 2 * diff_r_200, r_200_min0 + 2 * diff_r_200 )
-        
+                if r_200_min0 - 2 * diff_r_200 <= 0:
+                    r_200_lims = ( 0.0000, r_200_min0 + 2 * diff_r_200 )
+                else:
+                    r_200_lims = ( r_200_min0 - 2 * diff_r_200, r_200_min0 + 2 * diff_r_200 )
+
         if chatter:
             print(c_min)
             print(r_200_min)
             print(err_score)
-            print('flag: ' + str(flag) )
             print('fitting_c: ' + str(fitting_c) + ', fitting_r_200: ' + str(fitting_r_200))
             print('')
 
+    # Set flags and warnings if fits are unphysical
+    if c_min == 1:
+        flag = True
+        warnings.warn('parameter c_min is 1.  Check parameter space limits, or NFW may not be a proper profile.')
+    if r_200_min == 0:
+        flag = True
+        warnings.warn('parameter r_200_min is 0.  Check parameter space limits, or NFW may not be a proper profile.')
+
     return round(c_min, sigfigs=c_prec), round(r_200_min.value, sigfigs=r_200_prec) * u.kpc, round(err_score, decimals=3), flag
+
+########################################
+#### tNFW Fitting Functions ############
+########################################
+
+def fit_m_tnfw2d(r, m, c_prec=4, r_200_prec=4, tau_prec=4, c_start=10, r_200_start=10 * u.kpc, z=0,
+                      chatter=False):
+    """
+    Given data points for 2D cylindrical mass enclosed at r,
+    find c, r_200, and tau to fit tNFW profile
+    
+    Inputs:
+    r - array of min length 2, radius values (astropy units expected)
+    m - array of min length 2, enclosed mass values (astropy units expected)
+    c_prec - desired precision of c (sigfigs)
+    r_200_prec - desired precision of r_200 (sigfigs)
+    tau_prec - desired precision of tau (sigfigs)
+    c_start - initial value for c_200
+    r_200_start - initial value for r_200 (astropy units expected)
+    z - redshift of the halo
+    chatter - option to see fittings progress
+    
+    Returns:
+    c_min - concentration parameter
+    r_200_min - virial radius, units consistent with input units
+    tau - dimentionless ratio of truncation radius to scale radius
+    err_score - log of the squared error for these values of c_min and r_200_min
+    flag - True if values are unphysical
+    """
+
+    flag = False
+    
+    c_lims = (c_start * 0.8, c_start * 1.2)
+    r_200_lims = (r_200_start * 0.8, r_200_start * 1.2)
+    tau_lims = (1.000, 1000.)
+    
+    # Booleans to track if we are still fitting
+    fitting_c = True; fitting_r_200 = True; fitting_tau = True
+
+    c_res = 100; r_200_res = 100; tau_res = 100
+    
+    i = 0 # Counter
+
+    while fitting_c or fitting_r_200 or fitting_tau:
+        i += 1
+
+        # Build parameter space
+        c_axis = np.linspace(c_lims[0], c_lims[1], c_res)
+        r_200_axis = np.linspace(r_200_lims[0], r_200_lims[1], r_200_res)
+        tau_axis = np.linspace(tau_lims[0], tau_lims[1], tau_res)
+        cc, r2r2, tt = np.meshgrid(c_axis, r_200_axis, tau_axis)
+
+        # Calculate squared error
+        error = np.zeros((c_res, r_200_res, tau_res))
+        for ind, val in enumerate(r):
+            error += (np.log10(dmp.m_tnfw_2d(val, cc, r2r2, tt, z).value) - np.log10(m[ind].value))**2
+
+        # Find best fit values
+        min_ind = np.unravel_index(np.argmin(error, axis=None),error.shape)
+        # Index 0 is r200, 1 is c, 2 is tau
+        c_min = c_axis[min_ind[1]]
+        r_200_min = r_200_axis[min_ind[0]]
+        tau_min = tau_axis[min_ind[2]]
+        err_score = 100 * 100**( -1 * error[min_ind[0]][min_ind[1]][min_ind[2]] )
+
+        # Set new parameter space limits
+
+        # For tau, no initial guess
+        if i == 1:
+            tau_start = tau_min
+            
+            # Best value +/- 10%
+            if 0.9 * tau_start < 1:
+                tau_lims = ( 1.000, 1.1 * tau_start )
+            elif 1.1 * tau_start > 1000:
+                tau_lims = ( 0.9 * tau_start, 1000. )
+            else:
+                tau_lims = ( 0.9 * tau_start, 1.1 * tau_start )
+                
+        else:
+            diff_tau = abs(tau_min - tau_start)
+            
+            if diff_tau < abs(tau_start * 10**(-1 * tau_prec)):
+                fitting_tau = False
+                
+            tau_start = tau_min
+            
+            if fitting_tau:
+                if tau_start - 2 * diff_tau < 1 and tau_start + 2 * diff_tau > 1000:
+                    tau_lims = ( 1.000, 1000. )
+                elif tau_start - 2 * diff_tau < 1:
+                    tau_lims = ( 1.000, tau_start + 2 * diff_tau )
+                elif tau_start + 2 * diff_tau > 1000:
+                    tau_lims = ( tau_start - 2 * diff_tau, 1000. )
+                else:
+                    tau_lims = ( tau_start - 2 * diff_tau, tau_start + 2 * diff_tau )
+        
+        # Now for c and r_200
+        diff_c = abs(c_min - c_start)
+        diff_r_200 = abs(r_200_min - r_200_start)
+
+        if diff_c < abs(c_start * 10**(-1 * c_prec)):
+            fitting_c = False
+        if diff_r_200 < abs(r_200_start * 10**(-1 * r_200_prec)):
+            fitting_r_200 = False
+
+        c_start = c_min
+        r_200_start = r_200_min
+
+        if fitting_c:
+            if c_start - 2 * diff_c < 1:
+                c_lims = ( 1.000, c_start + 2 * diff_c )
+            else:
+                c_lims = ( c_start - 2 * diff_c, c_start + 2 * diff_c )
+        if fitting_r_200:
+            if r_200_start - 2 * diff_r_200 <= 0:
+                r_200_lims = ( 0.0000, r_200_start + 2 * diff_r_200 )
+            else:
+                r_200_lims = ( r_200_start - 2 * diff_r_200, r_200_start + 2 * diff_r_200 )
+
+        if chatter:
+            print(c_min)
+            print(r_200_min)
+            print(tau_min)
+            print(err_score)
+            print('fitting_c: ' + str(fitting_c) + ', fitting_r_200: ' + str(fitting_r_200) + ', fitting_tau: ' + str(fitting_tau))
+            print('')
+
+    # Set flags and warnings if fits are unphysical
+    if c_min == 1:
+        flag = True
+        warnings.warn('parameter c_min is 1.  Check parameter space limits, or NFW may not be a proper profile.')
+    if r_200_min == 0:
+        flag = True
+        warnings.warn('parameter r_200_min is 0.  Check parameter space limits, or NFW may not be a proper profile.')
+    if tau_min == 1:
+        flag = True
+        warnings.warn('parameter tau is pinned at 1.  tNFW profile changes for tau < 1.')
+
+    return round(c_min, sigfigs=c_prec), round(r_200_min.value, sigfigs=r_200_prec) * u.kpc, round(tau_min, sigfigs=tau_prec), round(err_score, decimals=3), flag
 
 ########################################
 #### PIEMD Fitting Function ############
