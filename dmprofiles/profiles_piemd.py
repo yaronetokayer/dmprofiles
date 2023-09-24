@@ -14,7 +14,7 @@ cosmo = FlatLambdaCDM(H0=69, Om0=0.3)
 #### PIEMD Profiles ####
 ########################
 
-def m_piemd_2d(r, vdisp, rcore, rcut):
+def m_piemd_2d(r, vdisp, rcore, rcut, convention='eliasdottir+07'):
     """
     PIEMD 2D cylindrical mass enclosed at r, given the velocity dispersion, r_core and r_cut
     
@@ -23,12 +23,18 @@ def m_piemd_2d(r, vdisp, rcore, rcut):
     vdisp - velocity dispersion of galaxy to set the norm of the mass distribution model  (Astropy units expected)
     rcore - PIEMD core radius  of galaxy (Astropy distance units expected)
     rcut - PIEMD cut radius  of galaxy (Astropy distance units expected)
+    convention - which convention of dispersion velocity is being used. Options are 'eliasdottir+07' and 'sis'
     
     Returns:
     m_piemd_2d - 2D cylindrical integrated mass at r (Msun)
     """
     
-    sigma_0 = ((vdisp)**2) / ( 2 * G * rcore)
+    if convention=='eliasdottir+07':
+        sigma_0 = vdisp**2 / ( 4 / 3 * G ) * (rcut**2 - rcore**2) / (rcore * rcut**2)
+    elif convention=='sis':
+        sigma_0 = ((vdisp)**2) / ( 2 * G * rcore)
+    else:
+        raise ValueError("convention keyword can be 'eliasdottir+07' or 'sis'")
     
     m_piemd_2d = ( ( 2 * np.pi * sigma_0 * rcore * rcut / (rcut - rcore) ) 
                   * ( np.sqrt(rcore**2 + r**2) 
