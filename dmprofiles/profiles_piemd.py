@@ -61,7 +61,7 @@ def m_piemd_tot(vdisp, rcore, rcut):
     
     return m_piemd_tot.to(u.Msun)
 
-def v_disp_from_m_piemd_2d(m_enc, r, rcore, rcut):
+def v_disp_from_m_piemd_2d(m_enc, r, rcore, rcut, convention='eliasdottir+07'):
     '''
     Get vdisp (central velocity dispersion) given mass enclosed
     within 2D PIEMD aperture
@@ -72,15 +72,27 @@ def v_disp_from_m_piemd_2d(m_enc, r, rcore, rcut):
     r - radius within which mass is known (Astropy distance units)
     rcore - PIEMD core radius  of galaxy (Astropy distance units expected)
     rcut - PIEMD cut radius  of galaxy (Astropy distance units expected)
+    convention - which convention of dispersion velocity is being used. Options are 'eliasdottir+07' and 'sis'
     
     Returns:
     vdisp - velocity dispersion (km/s)
     '''
-    
-    vdisp = np.sqrt( m_enc * G * ( rcut - rcore ) 
-                    / ( 
-                        np.pi * rcut * ( rcut - rcore + np.sqrt( rcore**2 + r**2 ) - np.sqrt( rcut**2 + r**2 ) ) 
-                    ) )
+
+    if convention=='eliasdottir+07':
+        vdisp = np.sqrt(
+            ( m_enc * 2 * G * rcut ) / ( 3 * np.pi * ( rcut + rcore ) ) 
+            / ( np.sqrt( rcore**2 + r**2 ) - np.sqrt( rcut**2 + r**2 ) + rcut - rcore )
+            )
+
+    elif convention=='sis':
+        vdisp = np.sqrt( m_enc * G * ( rcut - rcore ) 
+            / ( 
+                np.pi * rcut * ( rcut - rcore + np.sqrt( rcore**2 + r**2 ) - np.sqrt( rcut**2 + r**2 ) ) 
+                ) 
+            )
+    else:
+        raise ValueError("convention keyword can be 'eliasdottir+07' or 'sis'")
+
     
     return vdisp.to(u.km/u.s)
 
