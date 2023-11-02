@@ -2,6 +2,8 @@ import numpy as np
 
 from astropy import units as u
 
+from scipy.integrate import cumtrapz
+
 def rho_from_m3d(r, m3d):
     '''
     Function to calculate the 3D mass density given the 3D enclosed mass using 
@@ -100,3 +102,48 @@ def sigma_from_rho(r_array, rho):
 #     sigma = sigma * u.Msun / u.kpc**2
 
 #     return sigma
+
+def m2d_from_sigma(r_array, sigma):
+    '''
+    Function to convert 2D projected surface mass density to 2D integrated mass
+
+    Inputs:
+    r_array - array of r values (Astropy distance units)
+    sigma - array of projected 2D surface mass density values (Astropy units)
+
+    Returns:
+    m2d - 2D integrated mass (Astropy units)
+    '''
+    
+    # Calculate integrand components
+    r_values = r_array.to(u.kpc)
+    integrand = (sigma * 2 * np.pi * r_values).to(u.Msun / u.kpc).value
+
+    # Calculate the cumulative sum of the integrand
+    cumulative_integral = cumtrapz(integrand, r_values.value, initial=0)
+    m2d = cumulative_integral * u.Msun
+
+    return m2d
+
+### OLD VERSION ###
+
+# def m2d_from_sigma(r_array, sigma):
+#     '''
+#     Function to convert 2D projected surface mass density to 2D integrated mass
+
+#     Inputs:
+#     r_array - array of r values (Astropy distance units)
+#     sigma - array of projected 2D surface mass density values (Astropy units)
+
+#     Returns:
+#     m2d - 2D integrated mass (Astropy units)
+#     '''
+    
+#     integrand = (sigma * 2 * np.pi * r_array).to(u.Msun / u.kpc).value
+
+#     m2d = np.empty(r_array.shape)
+
+#     for i, r in enumerate(r_array):
+#         m2d[i] = np.trapz(integrand[:i], x=r_array[:i].to(u.kpc).value)
+
+#     return m2d * u.Msun
