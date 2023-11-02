@@ -72,6 +72,63 @@ def m_nfw_3d(r, c, r_200, z=0, cosmo=cosmo):
     
     return m_nfw_3d.to(u.Msun)
 
+def sigma_nfw(r, c, r_200, z=0, cosmo=cosmo):
+    """
+    NFW 2D projected surface mass density at r, given the concentration parameter and r_200
+    e.g., Wright and Brainerd (1999) Eq. 11
+    
+    Inputs:
+    r - radius at which to compute the density (astropy units expected)
+    c - concentration parameter
+    r_200 - array-like, radius of the halo inside which the mass density is 200*rho_c
+           (astropy units expected)
+    z - redshift of the halo (default is 0)
+    cosmo - astropy cosmology class instantiation.
+            Default is FlatLambdaCDM(H0=69, Om0=0.3)
+    
+    Returns:
+    sigma_nfw - 2D projected surface mass density at r (Msun/kpc**2)
+    """
+    
+    d_c = delta_c(c)
+    
+    h = cosmo.H(z) # Hubble parameter
+    
+    rho_c = ( 3 * h**2 ) / ( 8 * np.pi * G )
+    
+    r_s = r_200 / c
+
+    factor = 2 * r_s * d_c * rho_c
+    
+    x = ( r / r_s ).to(u.dimensionless_unscaled).value # x is dimensionless
+    
+    # x = 1
+    # returns zero for all other values
+    sigma_1 = np.where(x == 1, 1 / 3, np.zeros(x.shape))
+    
+    # x < 1
+    # returns zero for all other values
+    sigma_l = ( 
+        np.power(x**2 - 1, -1, out=np.zeros(x.shape), where=x < 1 ) 
+        * ( 1 - 2 * np.arctanh( np.sqrt(( 1 - x ) / ( 1 + x), out=np.zeros(x.shape), where=x < 1  ) ) 
+           / np.sqrt( 1 - x**2, out=np.ones(x.shape), where=x < 1 ) 
+          )
+    )
+    
+    # x > 1
+    # returns zero for all other values
+    sigma_g = ( 
+        np.power(x**2 - 1, -1, out=np.zeros(x.shape), where=x > 1 ) 
+        * ( 1 - 2 * np.arctan( np.sqrt(( x - 1 ) / ( 1 + x), out=np.zeros(x.shape), where=x > 1  ) ) 
+           / np.sqrt( x**2 - 1, out=np.ones(x.shape), where=x > 1 ) 
+          )
+    )
+    
+    # Convert from avg surface density to total enclosed mass
+    sigma_nfw = factor * ( sigma_l + sigma_1 + sigma_g )
+    
+    return sigma_nfw.to(u.Msun / u.kpc**2)
+
 def m_nfw_2d(r, c, r_200, z=0, cosmo=cosmo):
     """
     NFW 2D cylindrical mass enclosed at r, given the concentration parameter and r_200
