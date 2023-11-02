@@ -14,8 +14,44 @@ cosmo = FlatLambdaCDM(H0=69, Om0=0.3)
 #### Exponential Profiles ####
 ##############################
 
+def rho_exp(r, m_0, r_d):
+    '''
+    3D mass enclosed within radius r for an exponential disk
+    
+    Inputs:
+    r - aperture radius (Astropy distance units)
+    m_0 - normalization of the 3D *mass profile* (Astropy mass units)
+          The normalization of the 3D density is 1/(4*pi*r_d**2) that of the 3D mass profile
+    r_d - scale radius of the 3D exponential profile (Astropy distance units)
+    
+    Returns:
+    m_exp_3d - mass enclosed (Msun)
+    '''
+
+    rho_3d = ( m_0 / ( 4 * np.pi * r_d**2 * r ) ) * np.exp(-r/r_d)
+
+    return ( rho_3d ).to(u.Msun / u.kpc**3)
+
+def m_exp_3d(r, m_0, r_d):
+    '''
+    3D mass enclosed within radius r for an exponential disk
+    
+    Inputs:
+    r - aperture radius (Astropy distance units)
+    m_0 - normalization of the 3D mass profile (Astropy units)
+    r_d - scale radius of the 3D exponential disk (Astropy distance units)
+    
+    Returns:
+    m_exp_3d - mass enclosed (Msun)
+    '''
+    
+    m_exp_3d = m_0 * ( 1 - ( 1 + r / r_d ) * np.exp(-r/r_d) )
+    
+    return m_exp_3d.to(u.Msun)
+
 def m_exp_2d(r, sig_0, r_d):
     '''
+    THIS IS FISHY!! - DO NOT TRUST
     2D mass enclosed within radius r for an exponential disk
     
     Inputs:
