@@ -17,11 +17,8 @@ def rho_from_m3d(r, m3d):
     Returns:
     rho - 3D mass density at each r value (Astropy units)
     '''
-    # Volume
-    v = 4 * np.pi * r**3 / 3
 
-    # Take derivative 
-    rho = np.gradient(m3d, v)
+    rho = np.gradient(m3d, r) / (4 * np.pi * r**2)
 
     return rho.to(u.Msun / u.kpc**3)
 
@@ -37,11 +34,8 @@ def sigma_from_m2d(r, m2d):
     Returns:
     sigma - 2D mass density at each r value (Astropy units)
     '''
-    # Volume
-    a = np.pi * r**2
 
-    # Take derivative 
-    sigma = np.gradient(m2d, a)
+    sigma = np.gradient(m2d, r) / (2 * np.pi * r)
 
     return sigma.to(u.Msun / u.kpc**2)
 
