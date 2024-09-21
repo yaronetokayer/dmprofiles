@@ -2,7 +2,7 @@ import numpy as np
 
 from astropy import units as u
 
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid
 
 def rho_from_m3d(r, m3d):
     '''
@@ -114,7 +114,7 @@ def m2d_from_sigma(r_array, sigma):
     integrand = (sigma * 2 * np.pi * r_values).to(u.Msun / u.kpc).value
 
     # Calculate the cumulative sum of the integrand
-    cumulative_integral = cumtrapz(integrand, r_values.value, initial=0)
+    cumulative_integral = cumulative_trapezoid(integrand, r_values.value, initial=0)
     m2d = cumulative_integral * u.Msun
 
     return m2d
